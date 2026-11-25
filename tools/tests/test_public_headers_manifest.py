@@ -3,6 +3,7 @@ import os
 import subprocess
 import sys
 import tempfile
+import time
 import unittest
 from pathlib import Path
 from unittest.mock import patch
@@ -72,6 +73,10 @@ class Tests(unittest.TestCase):
         path.write_bytes(b"x" * before.st_size)
         os.utime(path, ns=(before.st_atime_ns, before.st_mtime_ns))
         after = path.stat()
+        while after.st_ctime_ns == before.st_ctime_ns:
+            time.sleep(0.001)
+            os.utime(path, ns=(before.st_atime_ns, before.st_mtime_ns))
+            after = path.stat()
         with patch.object(public_headers_manifest.os, "fstat", side_effect=[before, after]):
             with self.assertRaisesRegex(ValueError, "changed while hashing"):
                 public_headers_manifest.hash_input(path)
